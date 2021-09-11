@@ -8,29 +8,80 @@
 # Michael Taylor
 # https://patternizer.github.io
 # patternizer AT gmail DOT com
+# michael DOT a DOT taylor AT uea DOT ac DOT uk
 #------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------
 # IMPORT PYTHON LIBRARIES
 #------------------------------------------------------------------------------
+
+# Dataframe libraries:
 import numpy as np
 import pandas as pd
+import xarray as xr
+
+# Datetime libraries:
+from datetime import datetime
+import nc_time_axis
+import cftime
+
 # Plotting libraries:
 import matplotlib
+#matplotlib.use('agg')
+import matplotlib as mpl
 import matplotlib.pyplot as plt; plt.close('all')
 import matplotlib.cm as cm
-from matplotlib import colors as mcol
 from matplotlib.cm import ScalarMappable
+from matplotlib import rcParams
+from matplotlib import image
+from matplotlib import colors as mcol
 from pandas.plotting import register_matplotlib_converters
 register_matplotlib_converters()
-
 import cmocean as cmo
-
 
 # Silence library version notifications
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=RuntimeWarning)
+warnings.filterwarnings("ignore", message="numpy.dtype size changed")
+warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
 #------------------------------------------------------------------------------
+
+#----------------------------------------------------------------------------
+# DARK BACKGROUND THEME
+#----------------------------------------------------------------------------
+matplotlib.rcParams['text.usetex'] = False
+rcParams['font.family'] = ['DejaVu Sans']
+rcParams['font.sans-serif'] = ['Avant Garde']
+plt.rc('text',color='white')
+plt.rc('lines',color='white')
+plt.rc('patch',edgecolor='white')
+plt.rc('grid',color='lightgray')
+plt.rc('xtick',color='white')
+plt.rc('ytick',color='white')
+plt.rc('axes',edgecolor='lightgray')
+plt.rc('axes',facecolor='black')
+plt.rc('axes',labelcolor='white')
+plt.rc('figure',facecolor='black')
+plt.rc('figure',edgecolor='black')
+plt.rc('savefig',edgecolor='black')
+plt.rc('savefig',facecolor='black')
+
+# Calculate current time
+
+now = datetime.now()
+currentmn = str(now.month)
+if now.day == 1:
+    currentdy = str(cal.monthrange(now.year,now.month-1)[1])
+    currentmn = str(now.month-1)
+else:
+    currentdy = str(now.day-1)
+if int(currentdy) < 10:
+    currentdy = '0' + currentdy    
+currentyr = str(now.year)
+if int(currentmn) < 10:
+    currentmn = '0' + currentmn
+titletime = str(currentdy) + '/' + currentmn + '/' + currentyr
 
 #------------------------------------------------------------------------------
 # SETTINGS: 
