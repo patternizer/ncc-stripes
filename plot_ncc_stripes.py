@@ -89,8 +89,11 @@ titletime = str(currentdy) + '/' + currentmn + '/' + currentyr
 #------------------------------------------------------------------------------
 
 fontsize = 20
+nsmooth = 5
+
 use_horizontal_colorbar = False
 use_only_hadcrut5 = False
+use_smoothing = False
 
 pathstr = 'DATA/'
 pages2kstr = 'PAGES2k.txt'
@@ -187,10 +190,13 @@ sigma = np.nanstd( df[(df['Year']>1900) & (df['Year']<2001)]['Global'] )
 
 if use_only_hadcrut5 == True:
     x = df[df['Year']>1850]['Year']
-    y = np.array(df[df['Year']>1850]['Global'] - mu)    
+    y = np.array( df[df['Year']>1850]['Global'] - mu )
 else:
     x = df['Year']
-    y = np.array(df['Global'] - mu)
+    if use_smoothing == True:
+        y = pd.Series(np.array( df['Global'] - mu) ).rolling(nsmooth,center=True).mean().values
+    else:
+        y = np.array( df['Global'] - mu )
 z = len(y)*[1.0]
 
 mask = np.isfinite(y)
@@ -269,7 +275,10 @@ else:
     plt.text(1820,0.02,'1850', weight='bold')    
     plt.text(2020,0.02,'2020', weight='bold')    
     plt.title('Mean annual anomaly (global): 500-2020 AD', fontsize=fontsize)
-    plt.savefig('climate-bars.png')
+    if use_smoothing == True:    
+        plt.savefig('climate-bars'+'-'+str(nsmooth)+'yr-smooth'+'-'+'.png')
+    else:
+        plt.savefig('climate-bars.png')
 plt.close(fig)
 
 # PLOT: mean annual anomaly (1900-2019) as climate stripes
@@ -291,7 +300,10 @@ else:
     plt.text(1820,-0.02,'1850', weight='bold')    
     plt.text(1990,-0.02,'2020', weight='bold')    
     plt.title('Mean annual anomaly (global): 500-2020 AD', fontsize=fontsize)
-    plt.savefig('climate-stripes.png')
+    if use_smoothing == True:    
+        plt.savefig('climate-stripes'+'-'+str(nsmooth)+'yr-smooth'+'-'+'.png')
+    else:
+        plt.savefig('climate-stripes.png')
 plt.close(fig)
 
 #------------------------------------------------------------------------------
