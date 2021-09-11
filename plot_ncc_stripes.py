@@ -89,16 +89,23 @@ titletime = str(currentdy) + '/' + currentmn + '/' + currentyr
 #------------------------------------------------------------------------------
 
 fontsize = 20
-nsmooth = 5
+nsmooth = 25
 
 use_horizontal_colorbar = False
-use_only_hadcrut5 = False
-use_smoothing = False
+use_only_hadcrut5 = True
+use_smoothing = True
+#projectionstr = 'RCP3pd'
+#projectionstr = 'RCP45'
+#projectionstr = 'RCP6'
+projectionstr = 'RCP85'
 
 pathstr = 'DATA/'
 pages2kstr = 'PAGES2k.txt'
 hadcrut5str = 'HadCRUT5.csv'
-fairstr = 'FaIR.csv'
+#projectionstr = 'RCP45'
+#projectionstr = 'RCP6'
+#projectionstr = 'RCP85'
+fairstr = 'fair' + '_' + projectionstr.lower() + '.csv' 
 pages2k_file = pathstr + pages2kstr 
 hadcrut5_file = pathstr + hadcrut5str 
 fair_file = pathstr + fairstr 
@@ -141,7 +148,7 @@ df_pages2k['t_pages2k'] = t_pages2k.year.astype(float)
 df_pages2k['ts_pages2k'] = ts_pages2k
 
 #-----------------------------------------------------------------------------
-# LOAD: HadCRUT5 (via Tim Osorn and UKMO with thanks) --> df_hadcrut5
+# LOAD: HadCRUT5 (via Tim Osborn and UKMO with thanks) --> df_hadcrut5
 # NB: convert time to year.decimal
 #-----------------------------------------------------------------------------
 
@@ -164,12 +171,25 @@ df_hadcrut5_yearly = pd.DataFrame()
 df_hadcrut5_yearly['t_hadcrut5'] = years.astype('float')
 df_hadcrut5_yearly['ts_hadcrut5'] = yearly
 
+#-----------------------------------------------------------------------------
+# LOAD: FaIR v1.6.3 projections (constrained by HadCRUT5-analysis) --> df_fair
+# NB: convert time to year.decimal
+#-----------------------------------------------------------------------------
+
+fair = pd.read_csv(fair_file)
+df_fair = pd.DataFrame()
+df_fair['t_fair'] = fair.Year.values.astype('float')
+df_fair['ts_fair'] = fair.Global.values
+
 #------------------------------------------------------------------------------
 # MERGE: dataframes
 #------------------------------------------------------------------------------
 
-t = np.floor(df_pages2k.t_pages2k).append(np.floor(df_hadcrut5_yearly.t_hadcrut5)).reset_index(drop=True)
-ts = df_pages2k.ts_pages2k.append(df_hadcrut5_yearly.ts_hadcrut5).reset_index(drop=True)
+#t = np.floor(df_pages2k.t_pages2k).append(np.floor(df_hadcrut5_yearly.t_hadcrut5)).reset_index(drop=True)
+#ts = df_pages2k.ts_pages2k.append(df_hadcrut5_yearly.ts_hadcrut5).reset_index(drop=True)
+
+t = (np.floor(df_pages2k.t_pages2k).append(np.floor(df_hadcrut5_yearly.t_hadcrut5))).append(np.floor(df_fair.t_fair)).reset_index(drop=True)
+ts = (df_pages2k.ts_pages2k.append(df_hadcrut5_yearly.ts_hadcrut5)).append(df_fair.ts_fair).reset_index(drop=True)
 
 df = pd.DataFrame()
 df['Year'] = t
@@ -182,15 +202,14 @@ df['Global'] = ts
 mu_1851_1900 = np.nanmean( df_hadcrut5[(df_hadcrut5['t_hadcrut5']>1850) & (df_hadcrut5['t_hadcrut5']<1901)]['ts_hadcrut5'] ) # -0.507873106
 mu_1961_1990 = np.nanmean( df_hadcrut5[(df_hadcrut5['t_hadcrut5']>1960) & (df_hadcrut5['t_hadcrut5']<1991)]['ts_hadcrut5'] ) #  0.005547222
 mu_1971_2000 = np.nanmean( df_hadcrut5[(df_hadcrut5['t_hadcrut5']>1970) & (df_hadcrut5['t_hadcrut5']<2001)]['ts_hadcrut5'] ) #  0.176816667
-
 mu = mu_1961_1990
 
 # COMPUTE: standard deviation of the annual average anomalies (1901-2000)
 sigma = np.nanstd( df[(df['Year']>1900) & (df['Year']<2001)]['Global'] )
 
 if use_only_hadcrut5 == True:
-    x = df[df['Year']>1850]['Year']
-    y = np.array( df[df['Year']>1850]['Global'] - mu )
+    x = df[ (df['Year']>=1850) & (df['Year']<=2020) ]['Year']
+    y = np.array( df[ (df['Year']>=1850) & (df['Year']<=2020) ]['Global'] - mu )
 else:
     x = df['Year']
     if use_smoothing == True:
@@ -271,14 +290,17 @@ if use_only_hadcrut5 == True:
     plt.title('Mean annual anomaly (global): 1850-2020 AD', fontsize=fontsize)    
     plt.savefig('climate-bars-1850-2020.png')
 else:
-    plt.text(470,0.02,'500', weight='bold')    
-    plt.text(1820,0.02,'1850', weight='bold')    
-    plt.text(2020,0.02,'2020', weight='bold')    
-    plt.title('Mean annual anomaly (global): 500-2020 AD', fontsize=fontsize)
+    plt.text(470, 0.02, '500', weight='bold')    
+    plt.text(970, 0.02, '1000', weight='bold')    
+    plt.text(1470, 0.02, '1500', weight='bold')    
+    plt.text(1820, 0.02, '1850', weight='bold')    
+    plt.text(2020, 0.02, '2020', weight='bold')    
+    plt.text(2200, 0.02, '2200', weight='bold')    
+    plt.title('Mean annual anomaly (global: ' + projectionstr + '): 500-2200 AD', fontsize=fontsize)
     if use_smoothing == True:    
-        plt.savefig('climate-bars'+'-'+str(nsmooth)+'yr-smooth'+'-'+'.png')
+        plt.savefig('climate-bars' + '-' + projectionstr + '-' + str(nsmooth) + 'yr-smooth' + '.png')
     else:
-        plt.savefig('climate-bars.png')
+        plt.savefig('climate-bars' + '-' + projectionstr + '.png')
 plt.close(fig)
 
 # PLOT: mean annual anomaly (1900-2019) as climate stripes
@@ -293,17 +315,20 @@ else:
     cbar = plt.colorbar(sm, shrink=0.5)
     cbar.set_label('Anomaly (from 1961-1990)', rotation=270, labelpad=25, fontsize=fontsize)
 if use_only_hadcrut5 == True:
-    plt.title('Mean annual anomaly (global): 1850-2020 AD', fontsize=fontsize)    
+    plt.title('Mean annual anomaly (global): 1850-2020 AD', fontsize=fontsize)
     plt.savefig('climate-stripes-1850-2020.png')
 else:
-    plt.text(470,-0.02,'500', weight='bold')    
-    plt.text(1820,-0.02,'1850', weight='bold')    
-    plt.text(1990,-0.02,'2020', weight='bold')    
-    plt.title('Mean annual anomaly (global): 500-2020 AD', fontsize=fontsize)
+    plt.text(470, -0.02, '500', weight='bold')    
+    plt.text(970, -0.02, '1000', weight='bold')    
+    plt.text(1470, -0.02, '1500', weight='bold')    
+    plt.text(1820, -0.02, '1850', weight='bold')    
+    plt.text(1990, -0.02, '2020', weight='bold')    
+    plt.text(2200, -0.02, '2200', weight='bold')    
+    plt.title('Mean annual anomaly (global: ' + projectionstr + '): 500-2200 AD', fontsize=fontsize)    
     if use_smoothing == True:    
-        plt.savefig('climate-stripes'+'-'+str(nsmooth)+'yr-smooth'+'-'+'.png')
+        plt.savefig('climate-stripes' + '-' + projectionstr + '-' + str(nsmooth) + 'yr-smooth' + '.png')
     else:
-        plt.savefig('climate-stripes.png')
+        plt.savefig('climate-stripes' + '-' + projectionstr + '.png')
 plt.close(fig)
 
 #------------------------------------------------------------------------------
