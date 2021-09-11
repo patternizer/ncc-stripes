@@ -1,0 +1,10 @@
+/*
+ * Copyright (C) 2021, Michael Taylor and co-creators
+ *
+ * The code is distributed under terms and conditions of the Attribution 4.0 International (CC BY 4.0) license:
+ * https://creativecommons.org/licenses/by/4.0/. 
+ * 
+ * This research code is inspired by https://showyourstripes.info/ and based on the graphics of lead scientist: Ed Hawkins
+ * and uses online data from PAGES2K, HadCRUT5 and projections from the FaIR simple climate model v1.6.3
+*/
+
