@@ -35,7 +35,7 @@ import matplotlib.cm as cm
 from matplotlib.cm import ScalarMappable
 from matplotlib import rcParams
 from matplotlib import image
-from matplotlib import colors as mcol
+import matplotlib.colors as mcolors
 from pandas.plotting import register_matplotlib_converters
 register_matplotlib_converters()
 import cmocean as cmo
@@ -92,8 +92,10 @@ fontsize = 20
 nsmooth = 25
 
 use_horizontal_colorbar = False
-use_only_hadcrut5 = True
+use_only_hadcrut5 = False
 use_smoothing = True
+use_logarithm = True
+
 #projectionstr = 'RCP3pd'
 #projectionstr = 'RCP45'
 #projectionstr = 'RCP6'
@@ -109,7 +111,7 @@ fairstr = 'fair' + '_' + projectionstr.lower() + '.csv'
 pages2k_file = pathstr + pages2kstr 
 hadcrut5_file = pathstr + hadcrut5str 
 fair_file = pathstr + fairstr 
-
+        
 #-----------------------------------------------------------------------------
 # LOAD: PAGES2k (via Ed Hawkins with thanks) --> df_pages2k
 # NB: convert time to year.decimal
@@ -153,11 +155,12 @@ df_pages2k['ts_pages2k'] = ts_pages2k
 #-----------------------------------------------------------------------------
 
 hadcrut5 = pd.read_csv(hadcrut5_file)
-t_hadcrut5_monthly = xr.cftime_range(start='1850', periods=len(hadcrut5), freq='MS', calendar='gregorian')
+#t_hadcrut5_monthly = xr.cftime_range(start='1850', periods=len(hadcrut5), freq='MS', calendar='gregorian')
+t_hadcrut5_monthly = xr.cftime_range(start='1850', periods=len(hadcrut5), freq='MS', calendar='noleap')
 ts_hadcrut5_monthly = hadcrut5['Anomaly (deg C)'].values
 
 df_hadcrut5 = pd.DataFrame()
-df_hadcrut5['t_hadcrut5'] = t_hadcrut5_monthly.year.astype(float) + t_hadcrut5_monthly.month.astype(float)/12
+df_hadcrut5['t_hadcrut5'] = t_hadcrut5_monthly.year.astype(float) + t_hadcrut5_monthly.month.astype(float)/12.0
 df_hadcrut5['ts_hadcrut5'] = ts_hadcrut5_monthly
 
 years = np.unique(t_hadcrut5_monthly.year)
@@ -170,6 +173,7 @@ for yyyy in years:
 df_hadcrut5_yearly = pd.DataFrame()
 df_hadcrut5_yearly['t_hadcrut5'] = years.astype('float')
 df_hadcrut5_yearly['ts_hadcrut5'] = yearly
+df_hadcrut5_yearly = df_hadcrut5_yearly[df_hadcrut5_yearly.t_hadcrut5 <= 2020]
 
 #-----------------------------------------------------------------------------
 # LOAD: FaIR v1.6.3 projections (constrained by HadCRUT5-analysis) --> df_fair
@@ -199,13 +203,13 @@ df['Global'] = ts
 # COMPUTE: climatological monthly mean (Ed's Climate Stripes: 1971-2000) from HadCRUT5 (monthly)
 #------------------------------------------------------------------------------
 
-mu_1851_1900 = np.nanmean( df_hadcrut5[(df_hadcrut5['t_hadcrut5']>1850) & (df_hadcrut5['t_hadcrut5']<1901)]['ts_hadcrut5'] ) # -0.507873106
-mu_1961_1990 = np.nanmean( df_hadcrut5[(df_hadcrut5['t_hadcrut5']>1960) & (df_hadcrut5['t_hadcrut5']<1991)]['ts_hadcrut5'] ) #  0.005547222
-mu_1971_2000 = np.nanmean( df_hadcrut5[(df_hadcrut5['t_hadcrut5']>1970) & (df_hadcrut5['t_hadcrut5']<2001)]['ts_hadcrut5'] ) #  0.176816667
+mu_1851_1900 = np.nanmean( df_hadcrut5[(df_hadcrut5['t_hadcrut5']>=1851) & (df_hadcrut5['t_hadcrut5']<=1900)]['ts_hadcrut5'] ) # -0.507873106
+mu_1961_1990 = np.nanmean( df_hadcrut5[(df_hadcrut5['t_hadcrut5']>=1961) & (df_hadcrut5['t_hadcrut5']<=1990)]['ts_hadcrut5'] ) #  0.005547222
+mu_1971_2000 = np.nanmean( df_hadcrut5[(df_hadcrut5['t_hadcrut5']>=1971) & (df_hadcrut5['t_hadcrut5']<=2000)]['ts_hadcrut5'] ) #  0.176816667
 mu = mu_1961_1990
 
 # COMPUTE: standard deviation of the annual average anomalies (1901-2000)
-sigma = np.nanstd( df[(df['Year']>1900) & (df['Year']<2001)]['Global'] )
+sigma = np.nanstd( df[(df['Year']>=1901) & (df['Year']<=2000)]['Global'] )
 
 if use_only_hadcrut5 == True:
     x = df[ (df['Year']>=1850) & (df['Year']<=2020) ]['Year']
@@ -218,15 +222,30 @@ else:
         y = np.array( df['Global'] - mu )
 z = len(y)*[1.0]
 
-mask = np.isfinite(y)
-y_min = y[mask].min()    
-y_max = y[mask].max()    
-y_ptp = y[mask].ptp()    
-y_norm = ((y - y_min) / y_ptp)    
+dg = pd.DataFrame({'x':x,'y':y})
+
+# EXPERIMENTAL: log10 ( with analytic continuation where y = ymin) 
+y_min = np.nanmin(y)
+mask = (y < 0.95 * y_min)
+if use_logarithm == True: 
+
+    y = np.log10( y-y_min )
     
+y[mask] = np.min(y[ (x>1500) & (x<1800) ]) 				# local epoch expectation minimum
+yinterp = (pd.Series(y).rolling(25,center=True).mean()).values	# re-smooth using in-fill at singular value(s)
+y = yinterp
+
 # DEFINE: colormap
 
+mask = np.isfinite(y)
+y_min = y[mask].min()
+y_max = y[mask].max()    
+y_ptp = y[mask].ptp()    
+y_norm = ((y - y_min ) / y_ptp)     # [0,1]
+#y_norm = [i / max(y) for i in y]   # [ymin/ymax,1]
+
 cmap = plt.cm.get_cmap('RdBu_r')
+#cmap = plt.cm.get_cmap('bwr')
 
 # 'Accent', 'Accent_r', 'Blues', 'Blues_r', 'BrBG', 'BrBG_r', 'BuGn', 'BuGn_r', 
 # 'BuPu', 'BuPu_r', 'CMRmap', 'CMRmap_r', 'Dark2', 'Dark2_r', 'GnBu', 'GnBu_r', 
@@ -270,32 +289,72 @@ cmap = plt.cm.get_cmap('RdBu_r')
 #minval = -0.75
 
 maxval = y_max
-minval = -y_max
+minval = y_min
 
 colors = cmap( y_norm )
-sm = ScalarMappable( cmap=cmap, norm=plt.Normalize(minval,maxval) )
+#norm = mcolors.CenteredNorm()
+norm = plt.Normalize(minval, maxval)
+sm = ScalarMappable( cmap=cmap, norm=norm )
+sm.set_array([])
+
+# PLOT: timeseries
+
+fig, ax = plt.subplots(figsize=(15,10))
+ax.axis('off')
+plt.plot(x, y, ls='-', lw=0.5, color='grey')
+plt.scatter(x, y, c=colors, cmap=cmap, norm=norm)
+cbar = plt.colorbar(sm, shrink=0.5, extend='both')
+if use_logarithm == True:
+    cbar.set_label('log₁₀(Anomaly-minimum)', rotation=270, labelpad=25, fontsize=fontsize)
+else:
+    cbar.set_label('Anomaly (from 1961-1990)', rotation=270, labelpad=25, fontsize=fontsize)
+ylimits = plt.ylim()    
+if use_only_hadcrut5 == True:
+#    plt.axvline(x=1975, lw=0.5, color='white')
+    plt.plot([1975,1975], ylimits, ls='dotted', lw=0.5, color='white')
+    plt.fill_betweenx(ylimits, 1961, 1990, facecolor='grey', alpha=0.5, zorder=0)        
+    plt.plot([1850,2020],[0,0], lw=0.5, color='white')
+    plt.text(1847, 0.02, '1850', weight='bold')    
+    plt.text(2017, 0.02, '2020', weight='bold')    
+    plt.title('Mean annual anomaly (global): 1850-2020 AD', fontsize=fontsize)
+    plt.savefig('climate-timeseries-1850-2020.png')
+else:
+    plt.plot([1975,1975], ylimits, ls='dotted', lw=0.5, color='white')
+    plt.fill_betweenx(ylimits, 1961, 1990, facecolor='grey', alpha=0.5, zorder=0)        
+    plt.plot([500,2200],[0,0], lw=0.5, color='white')
+    plt.text(485, 0.02, '500', weight='bold')    
+    plt.text(970, 0.02, '1000', weight='bold')    
+    plt.text(1470, 0.02, '1500', weight='bold')    
+    plt.text(1820, 0.02, '1850', weight='bold')    
+    plt.text(1990, 0.02, '2020', weight='bold')    
+    plt.text(2170, 0.02, '2200', weight='bold')    
+    plt.title('Mean annual anomaly (global: ' + projectionstr + '): 500-2200 AD', fontsize=fontsize)    
+    if use_smoothing == True:    
+        plt.savefig('climate-timeseries' + '-' + projectionstr + '-' + str(nsmooth) + 'yr-smooth' + '.png')
+    else:
+        plt.savefig('climate-timeseries' + '-' + projectionstr + '.png')
+plt.close(fig)
 
 # PLOT: mean annual anomaly (1900-2019) as climate stripe bars ( bar chart )
 
 fig, ax = plt.subplots(figsize=(15,10))
 ax.axis('off')
 plt.bar(x, y, color=colors, width=1.0)
-if use_horizontal_colorbar == True:
-    cbar = plt.colorbar(sm, shrink=0.5, orientation='horizontal')
-    cbar.set_label('Anomaly (from 1961-1990)', rotation=0, labelpad=25, fontsize=fontsize)
+cbar = plt.colorbar(sm, shrink=0.5, extend='both')
+if use_logarithm == True:
+    cbar.set_label('log₁₀(Anomaly-minimum)', rotation=270, labelpad=25, fontsize=fontsize)
 else:
-    cbar = plt.colorbar(sm, shrink=0.5)
     cbar.set_label('Anomaly (from 1961-1990)', rotation=270, labelpad=25, fontsize=fontsize)
 if use_only_hadcrut5 == True:
     plt.title('Mean annual anomaly (global): 1850-2020 AD', fontsize=fontsize)    
     plt.savefig('climate-bars-1850-2020.png')
 else:
     plt.text(470, 0.02, '500', weight='bold')    
-    plt.text(970, 0.02, '1000', weight='bold')    
-    plt.text(1470, 0.02, '1500', weight='bold')    
-    plt.text(1820, 0.02, '1850', weight='bold')    
-    plt.text(2020, 0.02, '2020', weight='bold')    
-    plt.text(2200, 0.02, '2200', weight='bold')    
+    plt.text(960, 0.02, '1000', weight='bold')    
+    plt.text(1460, 0.02, '1500', weight='bold')    
+    plt.text(1810, 0.02, '1850', weight='bold')    
+    plt.text(1980, 0.02, '2020', weight='bold')    
+    plt.text(2160, 0.02, '2200', weight='bold')    
     plt.title('Mean annual anomaly (global: ' + projectionstr + '): 500-2200 AD', fontsize=fontsize)
     if use_smoothing == True:    
         plt.savefig('climate-bars' + '-' + projectionstr + '-' + str(nsmooth) + 'yr-smooth' + '.png')
@@ -308,22 +367,21 @@ plt.close(fig)
 fig, ax = plt.subplots(figsize=(15,10))
 ax.axis('off')
 plt.bar(x, z, color=colors, width=1.0)
-if use_horizontal_colorbar == True:
-    cbar = plt.colorbar(sm, shrink=0.5, orientation='horizontal')
-    cbar.set_label('Mean annual anomaly (from 1961-1990)', rotation=0, labelpad=25, fontsize=fontsize)
+cbar = plt.colorbar(sm, shrink=0.5, extend='both')
+if use_logarithm == True:
+    cbar.set_label('log₁₀(Anomaly-minimum)', rotation=270, labelpad=25, fontsize=fontsize)
 else:
-    cbar = plt.colorbar(sm, shrink=0.5)
     cbar.set_label('Anomaly (from 1961-1990)', rotation=270, labelpad=25, fontsize=fontsize)
 if use_only_hadcrut5 == True:
     plt.title('Mean annual anomaly (global): 1850-2020 AD', fontsize=fontsize)
     plt.savefig('climate-stripes-1850-2020.png')
 else:
     plt.text(470, -0.02, '500', weight='bold')    
-    plt.text(970, -0.02, '1000', weight='bold')    
-    plt.text(1470, -0.02, '1500', weight='bold')    
-    plt.text(1820, -0.02, '1850', weight='bold')    
-    plt.text(1990, -0.02, '2020', weight='bold')    
-    plt.text(2200, -0.02, '2200', weight='bold')    
+    plt.text(960, -0.02, '1000', weight='bold')    
+    plt.text(1460, -0.02, '1500', weight='bold')    
+    plt.text(1810, -0.02, '1850', weight='bold')    
+    plt.text(1980, -0.02, '2020', weight='bold')    
+    plt.text(2160, -0.02, '2200', weight='bold')    
     plt.title('Mean annual anomaly (global: ' + projectionstr + '): 500-2200 AD', fontsize=fontsize)    
     if use_smoothing == True:    
         plt.savefig('climate-stripes' + '-' + projectionstr + '-' + str(nsmooth) + 'yr-smooth' + '.png')
