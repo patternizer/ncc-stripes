@@ -3,8 +3,8 @@
 #------------------------------------------------------------------------------
 # PROGRAM: plot-glosat-stripes.py
 #------------------------------------------------------------------------------
-# Version 0.2
-# 10 September, 2021
+# Version 0.3
+# 12 September, 2021
 # Michael Taylor
 # https://patternizer.github.io
 # patternizer AT gmail DOT com
@@ -94,12 +94,12 @@ nsmooth = 25
 use_horizontal_colorbar = False
 use_only_hadcrut5 = False
 use_smoothing = True
-use_logarithm = True
+use_logarithm = False
 
-#projectionstr = 'RCP3pd'
+projectionstr = 'RCP3pd'
 #projectionstr = 'RCP45'
 #projectionstr = 'RCP6'
-projectionstr = 'RCP85'
+#projectionstr = 'RCP85'
 
 pathstr = 'DATA/'
 pages2kstr = 'PAGES2k.txt'
@@ -212,28 +212,27 @@ mu = mu_1961_1990
 sigma = np.nanstd( df[(df['Year']>=1901) & (df['Year']<=2000)]['Global'] )
 
 if use_only_hadcrut5 == True:
-    x = df[ (df['Year']>=1850) & (df['Year']<=2020) ]['Year']
+    x = (df[ (df['Year']>=1850) & (df['Year']<=2020) ]['Year']).values
     y = np.array( df[ (df['Year']>=1850) & (df['Year']<=2020) ]['Global'] - mu )
 else:
-    x = df['Year']
+    x = (df['Year']).values
     if use_smoothing == True:
         y = pd.Series(np.array( df['Global'] - mu) ).rolling(nsmooth,center=True).mean().values
     else:
         y = np.array( df['Global'] - mu )
-z = len(y)*[1.0]
+z = np.array(len(y)*[1.0])
 
-dg = pd.DataFrame({'x':x,'y':y})
+dg = pd.DataFrame({'x':x,'y':y,'z':z})
 
 # EXPERIMENTAL: log10 ( with analytic continuation where y = ymin) 
-y_min = np.nanmin(y)
-mask = (y < 0.95 * y_min)
 if use_logarithm == True: 
 
-    y = np.log10( y-y_min )
-    
-y[mask] = np.min(y[ (x>1500) & (x<1800) ]) 				# local epoch expectation minimum
-yinterp = (pd.Series(y).rolling(25,center=True).mean()).values	# re-smooth using in-fill at singular value(s)
-y = yinterp
+    y_min = np.nanmin(y)
+    mask = (y < 0.95 * y_min)
+    y = np.log10( y-y_min )    
+    y[mask] = np.min(y[ (x>1500) & (x<1800) ]) 				        # local epoch expectation minimum
+    yinterp = (pd.Series(y).rolling(25,center=True).mean()).values	# re-smooth using in-fill at singular value(s)
+    y = yinterp
 
 # DEFINE: colormap
 
@@ -297,7 +296,11 @@ norm = plt.Normalize(minval, maxval)
 sm = ScalarMappable( cmap=cmap, norm=norm )
 sm.set_array([])
 
-# PLOT: timeseries
+#------------------------------------------------------------------------------
+# PLOTS
+#------------------------------------------------------------------------------
+
+# PLOT (1): timeseries
 
 fig, ax = plt.subplots(figsize=(15,10))
 ax.axis('off')
@@ -305,9 +308,9 @@ plt.plot(x, y, ls='-', lw=0.5, color='grey')
 plt.scatter(x, y, c=colors, cmap=cmap, norm=norm)
 cbar = plt.colorbar(sm, shrink=0.5, extend='both')
 if use_logarithm == True:
-    cbar.set_label('log₁₀(Anomaly-minimum)', rotation=270, labelpad=25, fontsize=fontsize)
+    cbar.set_label('log₁₀ (Anomaly-min)', rotation=270, labelpad=25, fontsize=14)
 else:
-    cbar.set_label('Anomaly (from 1961-1990)', rotation=270, labelpad=25, fontsize=fontsize)
+    cbar.set_label('Anomaly (from 1961-1990)', rotation=270, labelpad=25, fontsize=14)
 ylimits = plt.ylim()    
 if use_only_hadcrut5 == True:
 #    plt.axvline(x=1975, lw=0.5, color='white')
@@ -316,8 +319,9 @@ if use_only_hadcrut5 == True:
     plt.plot([1850,2020],[0,0], lw=0.5, color='white')
     plt.text(1847, 0.02, '1850', weight='bold')    
     plt.text(2017, 0.02, '2020', weight='bold')    
-    plt.title('Mean annual anomaly (global): 1850-2020 AD', fontsize=fontsize)
-    plt.savefig('climate-timeseries-1850-2020.png')
+    plt.title('Mean annual anomaly (global): 1850-2020 AD', fontsize=fontsize)    
+    plt.tight_layout()
+    plt.savefig('climate-timeseries-1850-2020.png', dpi=300)
 else:
     plt.plot([1975,1975], ylimits, ls='dotted', lw=0.5, color='white')
     plt.fill_betweenx(ylimits, 1961, 1990, facecolor='grey', alpha=0.5, zorder=0)        
@@ -329,26 +333,31 @@ else:
     plt.text(1990, 0.02, '2020', weight='bold')    
     plt.text(2170, 0.02, '2200', weight='bold')    
     plt.title('Mean annual anomaly (global: ' + projectionstr + '): 500-2200 AD', fontsize=fontsize)    
+#    plt.tight_layout()
     if use_smoothing == True:    
-        plt.savefig('climate-timeseries' + '-' + projectionstr + '-' + str(nsmooth) + 'yr-smooth' + '.png')
+        plt.savefig('climate-timeseries' + '-' + projectionstr + '-' + str(nsmooth) + 'yr-smooth' + '.png', dpi=300)
     else:
-        plt.savefig('climate-timeseries' + '-' + projectionstr + '.png')
+        plt.savefig('climate-timeseries' + '-' + projectionstr + '.png', dpi=300)
 plt.close(fig)
 
-# PLOT: mean annual anomaly (1900-2019) as climate stripe bars ( bar chart )
+# PLOT (2): mean annual anomaly (1900-2019) as climate stripe bars ( bar chart )
 
 fig, ax = plt.subplots(figsize=(15,10))
 ax.axis('off')
 plt.bar(x, y, color=colors, width=1.0)
+#plt.plot(x, y, color='grey', ls='-', lw=1)
 cbar = plt.colorbar(sm, shrink=0.5, extend='both')
 if use_logarithm == True:
-    cbar.set_label('log₁₀(Anomaly-minimum)', rotation=270, labelpad=25, fontsize=fontsize)
+    cbar.set_label('log₁₀ (Anomaly-min)', rotation=270, labelpad=25, fontsize=14)
 else:
-    cbar.set_label('Anomaly (from 1961-1990)', rotation=270, labelpad=25, fontsize=fontsize)
+    cbar.set_label('Anomaly (from 1961-1990)', rotation=270, labelpad=25, fontsize=14)
 if use_only_hadcrut5 == True:
+    plt.step(list(x)+[x[-1]], list(y)+[y[-1]], where='mid', color='grey', ls='-', lw=1)    
     plt.title('Mean annual anomaly (global): 1850-2020 AD', fontsize=fontsize)    
-    plt.savefig('climate-bars-1850-2020.png')
+    plt.tight_layout()
+    plt.savefig('climate-bars-1850-2020.png', dpi=300)
 else:
+    plt.plot(x, y, color='grey', ls='-', lw=1)
     plt.text(470, 0.02, '500', weight='bold')    
     plt.text(960, 0.02, '1000', weight='bold')    
     plt.text(1460, 0.02, '1500', weight='bold')    
@@ -356,26 +365,31 @@ else:
     plt.text(1980, 0.02, '2020', weight='bold')    
     plt.text(2160, 0.02, '2200', weight='bold')    
     plt.title('Mean annual anomaly (global: ' + projectionstr + '): 500-2200 AD', fontsize=fontsize)
+    plt.tight_layout()
     if use_smoothing == True:    
-        plt.savefig('climate-bars' + '-' + projectionstr + '-' + str(nsmooth) + 'yr-smooth' + '.png')
+        plt.savefig('climate-bars' + '-' + projectionstr + '-' + str(nsmooth) + 'yr-smooth' + '.png', dpi=300)
     else:
-        plt.savefig('climate-bars' + '-' + projectionstr + '.png')
+        plt.savefig('climate-bars' + '-' + projectionstr + '.png', dpi=300)
 plt.close(fig)
 
-# PLOT: mean annual anomaly (1900-2019) as climate stripes
+# PLOT (3): mean annual anomaly (1900-2019) as climate stripes
 
 fig, ax = plt.subplots(figsize=(15,10))
 ax.axis('off')
 plt.bar(x, z, color=colors, width=1.0)
+#plt.plot(x, y_norm, color='black', ls='-', lw=1)
 cbar = plt.colorbar(sm, shrink=0.5, extend='both')
 if use_logarithm == True:
-    cbar.set_label('log₁₀(Anomaly-minimum)', rotation=270, labelpad=25, fontsize=fontsize)
+    cbar.set_label('log₁₀ (Anomaly-min)', rotation=270, labelpad=25, fontsize=14)
 else:
-    cbar.set_label('Anomaly (from 1961-1990)', rotation=270, labelpad=25, fontsize=fontsize)
+    cbar.set_label('Anomaly (from 1961-1990)', rotation=270, labelpad=25, fontsize=14)
 if use_only_hadcrut5 == True:
+    plt.step(list(x)+[x[-1]], list(y_norm)+[y_norm[-1]], where='mid', color='black', ls='-', lw=1)
     plt.title('Mean annual anomaly (global): 1850-2020 AD', fontsize=fontsize)
-    plt.savefig('climate-stripes-1850-2020.png')
+    plt.tight_layout()
+    plt.savefig('climate-stripes-1850-2020.png', dpi=300)
 else:
+    plt.plot(x, y_norm, color='black', ls='-', lw=1)
     plt.text(470, -0.02, '500', weight='bold')    
     plt.text(960, -0.02, '1000', weight='bold')    
     plt.text(1460, -0.02, '1500', weight='bold')    
@@ -383,10 +397,11 @@ else:
     plt.text(1980, -0.02, '2020', weight='bold')    
     plt.text(2160, -0.02, '2200', weight='bold')    
     plt.title('Mean annual anomaly (global: ' + projectionstr + '): 500-2200 AD', fontsize=fontsize)    
+    plt.tight_layout()
     if use_smoothing == True:    
-        plt.savefig('climate-stripes' + '-' + projectionstr + '-' + str(nsmooth) + 'yr-smooth' + '.png')
+        plt.savefig('climate-stripes' + '-' + projectionstr + '-' + str(nsmooth) + 'yr-smooth' + '.png', dpi=300)
     else:
-        plt.savefig('climate-stripes' + '-' + projectionstr + '.png')
+        plt.savefig('climate-stripes' + '-' + projectionstr + '.png', dpi=300)
 plt.close(fig)
 
 #------------------------------------------------------------------------------
