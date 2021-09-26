@@ -64,7 +64,7 @@ use_hires_norwich = False
 use_dark_theme = True
 use_smoothing = False
 use_overlay_axis = False
-use_norwich_era_colormap = False
+use_norwich_era_colormap = True
 use_overlay_timeseries = True
 use_overlay_colorbar = True
 
@@ -581,7 +581,7 @@ if plot_climate_bars == True:
 # PLOT: ( 2A ) climate bars 65 Myr ( < 2015 ) - 500 CE ------------------------
 
     figstr = 'climate-bars-panel-A' + '-' + smoothstr + baselinestr + '.png'
-    titlestr = 'Global mean anomaly, 65 Myr (<2015) - 500 CE: ' + projectionstr
+    titlestr = 'Global mean anomaly, 65 Myr (<2015) - 500 CE'
     
     fig, ax = plt.subplots( figsize=(15,5) ); ax.axis('off')
     if use_log10_scale == True:                
@@ -651,7 +651,7 @@ if plot_climate_bars == True:
     plt.savefig( figstr, dpi=300 )
     plt.close(fig)
 
-    if use_norwich_era_colormap == True: colors, norm, sm = rescale_colormap(12)    
+    if use_norwich_era_colormap == True: colors, norm, sm = rescale_colormap(cbar_max)    
             
 # PLOT (3): climate stripes ---------------------------------------------------
 
@@ -705,7 +705,7 @@ if plot_climate_stripes == True:
 # PLOT: ( 3A ) climate stripes 65 Myr ( < 2015 ) - 500 CE ------------------------
 
     figstr = 'climate-stripes-panel-A' + '-' + smoothstr + baselinestr + '.png'
-    titlestr = 'Global mean anomaly, 65 Myr (<2015) - 500 CE: ' + projectionstr
+    titlestr = 'Global mean anomaly, 65 Myr (<2015) - 500 CE'
     
     fig, ax = plt.subplots( figsize=(15,5) ); ax.axis('off')
     if use_log10_scale == True:                
@@ -749,6 +749,13 @@ if plot_climate_stripes == True:
 
 # PLOT: ( 3B ) climate stripes 500 - 2200 CE -------------------------------------
     
+    if use_norwich_era_colormap == True: colors, norm, sm = rescale_colormap(y[-1])    
+
+    # COMPUTE: Norwich era norm
+    
+    Y = y[ len(p1x)+len(p2x)+len(p3x)+len(p4x): ]
+    Y_norm = ( Y-Y.min() ) / ( Y.max() - Y.min() )    
+    
     figstr = 'climate-stripes-panel-B' + '-' + projectionstr + '-' + smoothstr + baselinestr + '.png'
     titlestr = 'Global mean anomaly, 500-2200 CE: ' + projectionstr
      
@@ -777,6 +784,8 @@ if plot_climate_stripes == True:
     plt.tight_layout()
     plt.savefig( figstr, dpi=300 )
     plt.close(fig)
+
+    if use_norwich_era_colormap == True: colors, norm, sm = rescale_colormap(cbar_max)    
              
 #------------------------------------------------------------------------------
 print('** END')
