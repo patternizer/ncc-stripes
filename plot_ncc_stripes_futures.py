@@ -2,9 +2,10 @@
 
 #------------------------------------------------------------------------------
 # PROGRAM: ncc_stripes_futures.py
+# ( plots PAGES2k + HadCRUT5 + FaIR to visualise futures: no re-binning )
 #------------------------------------------------------------------------------
-# Version 0.2
-# 27 September, 2021
+# Version 0.3
+# 30 September, 2021
 # Michael Taylor
 # https://patternizer.github.io
 # patternizer AT gmail DOT com
@@ -32,16 +33,10 @@ import matplotlib
 import matplotlib.pyplot as plt; plt.close('all')
 import matplotlib.colors as mcolors
 import matplotlib.gridspec as gridspec
-from mpl_toolkits.axes_grid1 import AxesGrid
-from matplotlib import cm
 from matplotlib.cm import ScalarMappable
 from matplotlib import rcParams
 from pandas.plotting import register_matplotlib_converters
 register_matplotlib_converters()
-import cmocean as cmo
-
-# Statistics libraries:
-from scipy import stats
 
 # Silence library version notifications
 import warnings
@@ -56,28 +51,15 @@ warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
 #------------------------------------------------------------------------------
 
 fontsize = 10
-nsmooth = 5
+nsmooth = 2 # years
 cbar_max = 6.0
-barwidthfraction = 1.0
-
-use_log10_scale = False
-use_overlay_annotations = True
-use_hires_norwich = False
+t_start = 500 # >= 0
 
 use_dark_theme = True
-use_smoothing = False
-use_overlay_axis = False
-use_overlay_baseline = False
-use_norwich_era_colormap = True
+use_smoothing = True
+use_overlay_axis = True
 use_overlay_timeseries = True
 use_overlay_colorbar = True
-
-plot_climate_timeseries = True
-plot_climate_bars = True
-plot_climate_stripes = True
-
-use_only_hadcrut5 = False
-use_logarithm = False
 
 #projectionstr = 'RCP3pd'
 #projectionstr = 'RCP45'
@@ -96,8 +78,8 @@ projectionstr4 = 'SSP370'
 projectionstr5 = 'SSP585'
 
 #baselinestr = 'baseline_1851_1900'
-baselinestr = 'baseline_1961_1990'
-#baselinestr = 'baseline_1971_2000'
+#baselinestr = 'baseline_1961_1990'
+baselinestr = 'baseline_1971_2000'
 
 pathstr = 'DATA/'
 pages2kstr = 'PAGES2k.txt'
@@ -132,18 +114,20 @@ cmap = mcolors.LinearSegmentedColormap.from_list('colormap', ipcc_rgb_txtfile) #
 
 if use_dark_theme == True:
     
-    matplotlib.rcParams['text.usetex'] = False
-    rcParams['font.family'] = ['DejaVu Sans']
-    rcParams['font.sans-serif'] = ['Avant Garde']
+    matplotlib.rcParams['text.usetex'] = True
+#    rcParams['font.family'] = ['DejaVu Sans']
+#    rcParams['font.sans-serif'] = ['Avant Garde']
+    rcParams['font.family'] = 'sans-serif'
+    rcParams['font.sans-serif'] = ['Avant Garde', 'Lucida Grande', 'Verdana', 'DejaVu Sans' ]
     plt.rc('text',color='white')
     plt.rc('lines',color='white')
     plt.rc('patch',edgecolor='white')
     plt.rc('grid',color='lightgray')
     plt.rc('xtick',color='white')
     plt.rc('ytick',color='white')
-    plt.rc('axes',edgecolor='lightgray')
-    plt.rc('axes',facecolor='black')
     plt.rc('axes',labelcolor='white')
+    plt.rc('axes',facecolor='black')
+    plt.rc('axes',edgecolor='lightgray')
     plt.rc('figure',facecolor='black')
     plt.rc('figure',edgecolor='black')
     plt.rc('savefig',edgecolor='black')
@@ -152,29 +136,30 @@ if use_dark_theme == True:
 else:
 
     matplotlib.rcParams['text.usetex'] = True
+#    rcParams['font.family'] = ['DejaVu Sans']
+#    rcParams['font.sans-serif'] = ['Avant Garde']
     rcParams['font.family'] = 'sans-serif'
     rcParams['font.sans-serif'] = ['Avant Garde', 'Lucida Grande', 'Verdana', 'DejaVu Sans' ]
-    plt.rc('savefig',facecolor='white')
-    plt.rc('axes',edgecolor='black')
+    plt.rc('text',color='black')
+    plt.rc('lines',color='black')
+    plt.rc('patch',edgecolor='black')
+    plt.rc('grid',color='lightgray')
     plt.rc('xtick',color='black')
     plt.rc('ytick',color='black')
     plt.rc('axes',labelcolor='black')
     plt.rc('axes',facecolor='white')    
+    plt.rc('axes',edgecolor='black')
+    plt.rc('figure',facecolor='white')
+    plt.rc('figure',edgecolor='white')
+    plt.rc('savefig',edgecolor='white')
+    plt.rc('savefig',facecolor='white')
 
 # Calculate current time
 
 now = datetime.now()
-currentmn = str(now.month)
-if now.day == 1:
-    currentdy = str(cal.monthrange(now.year,now.month-1)[1])
-    currentmn = str(now.month-1)
-else:
-    currentdy = str(now.day-1)
-if int(currentdy) < 10:
-    currentdy = '0' + currentdy    
+currentdy = str(now.day).zfill(2)
+currentmn = str(now.month).zfill(2)
 currentyr = str(now.year)
-if int(currentmn) < 10:
-    currentmn = '0' + currentmn
 titletime = str(currentdy) + '/' + currentmn + '/' + currentyr
 
 #------------------------------------------------------------------------------
@@ -204,12 +189,10 @@ for i in range(nheader,len(lines)):
         obs.append(val)            
 f.close()    
 obs = np.array(obs)
-
 t_pages2k = xr.cftime_range(start=years[0], periods=len(years), freq='A', calendar='gregorian')[0:1849]
 ts_pages2k_instr = pd.to_numeric(obs[:,1][0:1849], errors='coerce')
 ts_pages2k_recon = pd.to_numeric(obs[:,5][0:1849], errors='coerce')
 ts_pages2k = np.append(ts_pages2k_recon[0:-36],ts_pages2k_instr[-36:],axis=None)
-
 df_pages2k = pd.DataFrame()
 df_pages2k['t_pages2k'] = t_pages2k.year.astype(float)
 df_pages2k['ts_pages2k'] = ts_pages2k
@@ -225,7 +208,6 @@ ts_hadcrut5_monthly = hadcrut5['Anomaly (deg C)'].values
 df_hadcrut5 = pd.DataFrame()
 df_hadcrut5['t_hadcrut5'] = t_hadcrut5_monthly.year.astype(float) + t_hadcrut5_monthly.month.astype(float)/12.0
 df_hadcrut5['ts_hadcrut5'] = ts_hadcrut5_monthly
-
 years = np.unique(t_hadcrut5_monthly.year)
 yearly = []
 SD = []
@@ -247,26 +229,22 @@ df_hadcrut5_yearly = df_hadcrut5_yearly[df_hadcrut5_yearly.t_hadcrut5 <= 2020]
 #-----------------------------------------------------------------------------
 
 fair1 = pd.read_csv(fair_file1)
+fair2 = pd.read_csv(fair_file2)
+fair3 = pd.read_csv(fair_file3)
+fair4 = pd.read_csv(fair_file4)
+fair5 = pd.read_csv(fair_file5)
 df_fair1 = pd.DataFrame()
 df_fair1['t_fair1'] = fair1.Year.values.astype('float')
 df_fair1['ts_fair1'] = fair1.Global.values
-
-fair2 = pd.read_csv(fair_file2)
 df_fair2 = pd.DataFrame()
 df_fair2['t_fair2'] = fair2.Year.values.astype('float')
 df_fair2['ts_fair2'] = fair2.Global.values
-
-fair3 = pd.read_csv(fair_file3)
 df_fair3 = pd.DataFrame()
 df_fair3['t_fair3'] = fair3.Year.values.astype('float')
 df_fair3['ts_fair3'] = fair3.Global.values
-
-fair4 = pd.read_csv(fair_file4)
 df_fair4 = pd.DataFrame()
 df_fair4['t_fair4'] = fair4.Year.values.astype('float')
 df_fair4['ts_fair4'] = fair4.Global.values
-
-fair5 = pd.read_csv(fair_file5)
 df_fair5 = pd.DataFrame()
 df_fair5['t_fair5'] = fair5.Year.values.astype('float')
 df_fair5['ts_fair5'] = fair5.Global.values
@@ -283,7 +261,6 @@ lines_hi = f_hi.readlines()
 years = []
 obs_lo = []
 obs_hi = []
-#for i in range(nheader,len(lineslo)):
 for i in range(nheader,180):
         words_lo = lines_lo[i].split()   
         words_hi = lines_hi[i].split()   
@@ -399,12 +376,12 @@ df_fair5 = df_fair5 - ( mu - mu_1851_1900 )
 # NB: PALEO + PAGES2k + HadCRUT5 + FaIR
 #------------------------------------------------------------------------------
 
-t = (np.floor(df_paleo.t_paleo).append(np.floor(df_pages2k.t_pages2k).append(np.floor(df_hadcrut5_yearly.t_hadcrut5))).append(np.floor(df_fair1.t_fair1))).reset_index(drop=True)
-ts1 = (df_paleo.ts_paleo.append(df_pages2k.ts_pages2k.append(df_hadcrut5_yearly.ts_hadcrut5)).append(df_fair1.ts_fair1)).reset_index(drop=True)
-ts2 = (df_paleo.ts_paleo.append(df_pages2k.ts_pages2k.append(df_hadcrut5_yearly.ts_hadcrut5)).append(df_fair2.ts_fair2)).reset_index(drop=True)
-ts3 = (df_paleo.ts_paleo.append(df_pages2k.ts_pages2k.append(df_hadcrut5_yearly.ts_hadcrut5)).append(df_fair3.ts_fair3)).reset_index(drop=True)
-ts4 = (df_paleo.ts_paleo.append(df_pages2k.ts_pages2k.append(df_hadcrut5_yearly.ts_hadcrut5)).append(df_fair4.ts_fair4)).reset_index(drop=True)
-ts5 = (df_paleo.ts_paleo.append(df_pages2k.ts_pages2k.append(df_hadcrut5_yearly.ts_hadcrut5)).append(df_fair5.ts_fair5)).reset_index(drop=True)
+t = (np.floor(df_paleo.t_paleo).append(np.floor(df_pages2k.t_pages2k).append(np.floor(df_hadcrut5_yearly.t_hadcrut5))).append(np.floor(df_fair1.t_fair1)))
+ts1 = (df_paleo.ts_paleo.append(df_pages2k.ts_pages2k.append(df_hadcrut5_yearly.ts_hadcrut5)).append(df_fair1.ts_fair1))
+ts2 = (df_paleo.ts_paleo.append(df_pages2k.ts_pages2k.append(df_hadcrut5_yearly.ts_hadcrut5)).append(df_fair2.ts_fair2))
+ts3 = (df_paleo.ts_paleo.append(df_pages2k.ts_pages2k.append(df_hadcrut5_yearly.ts_hadcrut5)).append(df_fair3.ts_fair3))
+ts4 = (df_paleo.ts_paleo.append(df_pages2k.ts_pages2k.append(df_hadcrut5_yearly.ts_hadcrut5)).append(df_fair4.ts_fair4))
+ts5 = (df_paleo.ts_paleo.append(df_pages2k.ts_pages2k.append(df_hadcrut5_yearly.ts_hadcrut5)).append(df_fair5.ts_fair5))
 
 df = pd.DataFrame()
 df['Year'] = t
@@ -415,10 +392,6 @@ df['Global4'] = ts4 - mu
 df['Global5'] = ts5 - mu
 df_sorted = df.sort_values(by=['Year']).dropna()
 df = df_sorted.copy().reset_index(drop=True)
-
-# COMPUTE: standard deviation of the annual average anomalies (1901-2000)
-#sigma1 = np.nanstd( df[(df['Year']>=1901) & (df['Year']<=2000)]['Global1'] )
-#sigma2 = np.nanstd( df[(df['Year']>=1901) & (df['Year']<=2000)]['Global2'] )
 
 x = (df['Year']).values
 y1 = np.array( df['Global1'] )
@@ -495,14 +468,15 @@ colors5, norm5, sm5 = rescale_colormap(cbar_max, y5)
 # PLOTS
 #------------------------------------------------------------------------------
 
-#if use_norwich_era_colormap == True: colors, norm, sm = rescale_colormap(y[-1])    
+Y = y1[(x>=t_start)&(x<=2020)] # from t_start to 2020 CE 
+Y1 = y1[ x>=2021 ] 		# SSP1-1.9
+Y2 = y2[ x>=2021 ] 		# SSP1-2.6
+Y3 = y3[ x>=2021 ] 		# SSP2-4.5
+Y4 = y4[ x>=2021 ] 		# SSP3-7.0
+Y5 = y5[ x>=2021 ] 		# SSP5-8.5
 
-Y = y1[(x>=500)&(x<=2020)]    
-Y1 = y1[ x>=2021 ]
-Y2 = y2[ x>=2021 ]
-Y3 = y3[ x>=2021 ]
-Y4 = y4[ x>=2021 ]
-Y5 = y5[ x>=2021 ]
+colors, norm, sm = rescale_colormap(cbar_max, Y)
+
 Y_norm = ( Y-Y.min() ) / ( Y.max() - Y.min() )    
 Y_norm1 = ( Y1-Y1.min() ) / ( Y1.max() - Y1.min() )    
 Y_norm2 = ( Y2-Y2.min() ) / ( Y2.max() - Y2.min() )    
@@ -510,20 +484,20 @@ Y_norm3 = ( Y3-Y3.min() ) / ( Y3.max() - Y3.min() )
 Y_norm4 = ( Y4-Y4.min() ) / ( Y4.max() - Y4.min() )    
 Y_norm5 = ( Y5-Y5.min() ) / ( Y5.max() - Y5.min() )    
 
-colors, norm, sm = rescale_colormap(cbar_max, Y)
-
 figstr = 'climate-stripes' + '-' + 'projections' + '.png'
 titlestr = 'Global mean anomaly since 500 CE: ' + 'SSP projections 2021-2200 CE'
 
-gs = gridspec.GridSpec(nrows=5, ncols=8, left=0, right=0.9, top=0.9, bottom=0.1, wspace=0.0, hspace=0.0)
+ncolumns = int(np.floor((2200-t_start)/180))
+if ncolumns < 2: ncolumns = 2
+gs = gridspec.GridSpec(nrows=5, ncols=ncolumns, left=0, right=0.9, top=0.9, bottom=0.1, wspace=0.0, hspace=0.0)
 fig = plt.figure(constrained_layout=True, figsize=(15,10) )
-ax0 = plt.subplot(gs[:, 0:7]); ax0.axis('off') # row 0, col 0
-ax1 = plt.subplot(gs[0, 7]); ax1.axis('off') # row 0, col 1
-ax2 = plt.subplot(gs[1, 7]); ax2.axis('off') # row 1, col 1
-ax3 = plt.subplot(gs[2, 7]); ax3.axis('off') # row 2, col 1
-ax4 = plt.subplot(gs[3, 7]); ax4.axis('off') # row 3, col 1
-ax5 = plt.subplot(gs[4, 7]); ax5.axis('off') # row 4, col 1
-ax0.bar( x[(x>=500)&(x<=2020)], z1[(x>=500)&(x<=2020)], color=colors, width=1.0 )
+ax0 = plt.subplot(gs[:, 0:ncolumns-1]); ax0.axis('off') # row 0, col 0
+ax1 = plt.subplot(gs[0, ncolumns-1]); ax1.axis('off') 	# row 0, col 1
+ax2 = plt.subplot(gs[1, ncolumns-1]); ax2.axis('off') 	# row 1, col 1
+ax3 = plt.subplot(gs[2, ncolumns-1]); ax3.axis('off') 	# row 2, col 1
+ax4 = plt.subplot(gs[3, ncolumns-1]); ax4.axis('off') 	# row 3, col 1
+ax5 = plt.subplot(gs[4, ncolumns-1]); ax5.axis('off') 	# row 4, col 1
+ax0.bar( x[(x>=t_start)&(x<=2020)], z1[(x>=t_start)&(x<=2020)], color=colors, width=1.0 )
 ax1.bar( x[x>=2021], z5[x>=2021], color=colors5[x>=2021], width=1.0 )
 ax2.bar( x[x>=2021], z4[x>=2021], color=colors4[x>=2021], width=1.0 )
 ax3.bar( x[x>=2021], z3[x>=2021], color=colors3[x>=2021], width=1.0 )
@@ -537,19 +511,51 @@ ax4.autoscale(tight=True)
 ax5.autoscale(tight=True)
 if use_overlay_axis == True: 
     ax0.axis('on')
-    ax1.axis('on')
-    ax2.axis('on')
-    ax3.axis('on')
-    ax4.axis('on')
+    ax1.axis('off')
+    ax2.axis('off')
+    ax3.axis('off')
+    ax4.axis('off')
     ax5.axis('on')
+       
+    def adjust_spines(ax, spines):
+        for loc, spine in ax.spines.items():
+            if loc in spines:
+                spine.set_position(('outward', 5))
+            else:
+                spine.set_color('none')  
+        if 'left' in spines:
+            ax.yaxis.set_ticks_position('left')
+        else:
+            ax.yaxis.set_ticks([])
+        if 'bottom' in spines:
+            ax.xaxis.set_ticks_position('bottom')
+        else:
+            ax.xaxis.set_ticks([]) 
+                        
+    xlabels = map(str,np.arange(500,2100,500))
+    plt.xticks( np.arange(500,2100,500), xlabels, rotation=0)
+    plt.xlim([500,2020])        
+    ax0.tick_params('both',length=7.5,width=2,which='major')             
+    adjust_spines(ax0, ['bottom'])            
+    ax0.spines['bottom'].set_linewidth(2)
+    ax0.spines['bottom'].set_color('white')
+    
+    xlabels = map(str,np.arange(2050,2250,50))
+    plt.xticks(np.arange(2050,2250,50),xlabels,rotation=0)
+    plt.xlim([2020,2200])    
+    ax5.tick_params('both',length=7.5,width=2,which='major')             
+    adjust_spines(ax5, ['bottom'])            
+    ax5.spines['bottom'].set_linewidth(2)
+    ax5.spines['bottom'].set_color('white')
+        
 if use_overlay_colorbar == True:
     cbar_ax = fig.add_axes([0.92, 0.25, 0.015, 0.5])
     cbar = fig.colorbar(sm, cax=cbar_ax, shrink=0.5, extend='both')
     cbar.set_label( cbarstr, rotation=270, labelpad=25, fontsize=14 )
 if use_overlay_timeseries == True: 
-    ax0.plot( x[(x>=500)&(x<=2020)], Y_norm/5., color='grey', ls='-', lw=1 )
-    ax0.axvline(x=x[x==2020][0], ls='dashed', lw=2, color='black')
-    ax0.text(1200, 0.5, '500-2020 CE', color='black', weight='bold', fontsize=20)
+    ax0.plot( x[(x>=t_start)&(x<=2020)], 1*Y_norm/5., color='grey', ls='-', lw=1 )
+    ax0.axvline(x=2021.0, ls='dashed', lw=2, color='black')
+    ax0.text( x[x==t_start + int((2020-t_start)/2.0)], 0.5, str(t_start) + '-2020 CE', color='black', weight='bold', fontsize=20)
     ax1.plot( x[x>=2021], Y_norm5, color='black', ls='-', lw=1 )
     ax2.plot( x[x>=2021], Y_norm4*y4[-1]/y5[-1], color='black', ls='-', lw=1 )
     ax3.plot( x[x>=2021], Y_norm3*y3[-1]/y5[-1], color='black', ls='-', lw=1 )
@@ -559,13 +565,11 @@ if use_overlay_timeseries == True:
     ax2.text(2030, 0.9, 'SSP3-7.0', color='black', weight='bold', fontsize=10)
     ax3.text(2030, 0.9, 'SSP2-4.5', color='black', weight='bold', fontsize=10)
     ax4.text(2030, 0.9, 'SSP1-2.6', color='black', weight='bold', fontsize=10)
-    ax5.text(2030, 0.9, 'SSP1-1.9', color='black', weight='bold', fontsize=10)
-    
-#fig.suptitle( titlestr, fontsize=fontsize )        
+    ax5.text(2030, 0.9, 'SSP1-1.9', color='black', weight='bold', fontsize=10)    
 plt.tight_layout()
-#fig.subplots_adjust(left=0.0, bottom=0.0, right=1.0, top=1.0, wspace=0.0, hspace=0.0)
 plt.savefig( figstr, dpi=300 )
 plt.close(fig)
 
 #------------------------------------------------------------------------------
 print('** END')
+
