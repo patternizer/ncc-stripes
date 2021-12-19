@@ -52,34 +52,32 @@ warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
 #------------------------------------------------------------------------------
 
 fontsize = 10
-nsmooth = 2 # years
-cbar_max = 4.0
+nsmooth = 1 # over N bins( 1 --> mask only NaN in raw data )
+cbar_max = 6.0
 barwidthfraction = 1.0
-t_start = -2580000
+t_start = -2580000 # start of Pleistocene
+#t_start = -66000000 # start of Pleistocene
 t_end = 2200
 
 use_timemask = True
-use_logarithm = False
+use_cbar_max = True
 use_log10_scale = False
-use_hires_norwich = True
-
 use_dark_theme = True
 use_smoothing = True
-use_overlay_axis = True
 use_overlay_timeseries = True
 use_overlay_colorbar = True
 
-plot_forecast_variability = True
-plot_color_mapping = True
+plot_forecast_variability = False
+plot_color_mapping = False
 plot_climate_timeseries = True
 plot_climate_bars = True
 plot_climate_stripes = True
+plot_climate_line = True
  
 #projectionstr = 'RCP3pd'
 #projectionstr = 'RCP45'
 #projectionstr = 'RCP6'
 #projectionstr = 'RCP85'
-
 #projectionstr = 'SSP119'
 projectionstr = 'SSP126'
 #projectionstr = 'SSP245'
@@ -90,9 +88,13 @@ baselinestr = 'baseline_1851_1900'
 #baselinestr = 'baseline_1961_1990'
 #baselinestr = 'baseline_1971_2000'
 
-# titlestr = r'Global mean anomaly, 65 Myr ( $\le$ 2015) - 2200 CE: ' + projectionstr
-titlestr = 'Global mean anomaly, 2.58 Myr ( < 2015) - 2200 CE: ' + projectionstr
- 
+if (use_timemask == True) & (t_end>2020):
+    titlestr = 'Global mean anomaly, 2.58 Myr ( < 2015 ) - ' + str(t_end) + ' CE: ' + projectionstr
+    paramstr = '-' + baselinestr + '-' + 'pleistocene' + '-' + projectionstr
+else:
+    titlestr = 'Global mean anomaly, 2.58 Myr ( < 2015 ) - ' + str(t_end) + ' CE'
+    paramstr = '-' + baselinestr + '-' + 'pleistocene'
+
 pathstr = 'DATA/'
 pages2kstr = 'PAGES2k.txt'
 hadcrut5str = 'HadCRUT5.csv'
@@ -120,8 +122,6 @@ cmap = mcolors.LinearSegmentedColormap.from_list('colormap', ipcc_rgb_txtfile) #
 if use_dark_theme == True:
     
     matplotlib.rcParams['text.usetex'] = False
-#    rcParams['font.family'] = ['DejaVu Sans']
-#    rcParams['font.sans-serif'] = ['Avant Garde']
     rcParams['font.family'] = 'sans-serif'
     rcParams['font.sans-serif'] = ['Avant Garde', 'Lucida Grande', 'Verdana', 'DejaVu Sans' ]
     plt.rc('text',color='white')
@@ -141,8 +141,6 @@ if use_dark_theme == True:
 else:
 
     matplotlib.rcParams['text.usetex'] = False
-#    rcParams['font.family'] = ['DejaVu Sans']
-#    rcParams['font.sans-serif'] = ['Avant Garde']
     rcParams['font.family'] = 'sans-serif'
     rcParams['font.sans-serif'] = ['Avant Garde', 'Lucida Grande', 'Verdana', 'DejaVu Sans' ]
     plt.rc('text',color='black')
@@ -283,12 +281,6 @@ elif (projectionstr == 'SSP370') | (projectionstr == 'SSP585') | (projectionstr 
 #     
 #-----------------------------------------------------------------------------
  
-#import xlrd
-#workbook = xlrd.open_workbook(paleo_file)
-#worksheet = workbook.sheet_by_index(0) # first sheet in workbook
-#ncols = worksheet.utter_max_cols
-#nrows = worksheet.utter_max_rows
-
 xl = pd.ExcelFile(paleo_file)
 df_xl = xl.parse('Sheet1',header=2)
 
@@ -363,94 +355,93 @@ df = df_sorted.copy().reset_index(drop=True)
 
 #------------------------------------------------------------------------------
 # BINNED STATISTICS
+#
+# NB: bins must overlap raw data to not generate NaN
 #------------------------------------------------------------------------------
 
-# PANEL 1: -66 Myr (K-Pg) to -2.58 Myr (Pleistocene) ---------------------------------
+# PANEL 1: -66 Myr (K-Pg) to -2.58 Myr (Pleistocene) --------------------------
 
-p1unit = 1e6
+p1unit = 1e5
 p1start = -66000000
-p1end = -2000000
+p1end = -2500000
 p1n = int( (p1end - p1start) / p1unit )
-
-y1 = df[ df.Year < -2.0e6 ]['Global']
-x1 = df[ df.Year < -2.0e6 ]['Year']
+y1 = df[ df.Year <= -2.58e6 ]['Global']
+x1 = df[ df.Year <= -2.58e6 ]['Year']
 s1 = stats.binned_statistic( x1, y1, 'mean', bins=np.linspace( p1start, p1end, p1n + 1 ) ) 
-p1x = np.linspace( p1start + p1unit/2., p1end - p1unit/2., p1n ) # [-65.5, -2.5] Myr --> 64 bars
+p1x = np.linspace( p1start + p1unit/2., p1end - p1unit/2., p1n ) # [-65.95, -2.55] Myr --> 635 bars
 p1y = s1.statistic
 
 # PANEL 2: -2.58 Myr (Pleistocene) to -478 Kyr (Anglian Glacial) --------------
 
-p2unit = 1e3
-p2start = -2000000
-p2end = -500000
+p2unit = 1e4
+p2start = -2600000
+p2end = -470000
 p2n = int( (p2end - p2start) / p2unit )
-
-y2 = df[ (df.Year >= -2.6e6) & (df.Year < -450.0e3) ]['Global']
-x2 = df[ (df.Year >= -2.6e6) & (df.Year < -450.0e3) ]['Year']
+y2 = df[ (df.Year >= -2.58e6) & (df.Year < -478.0e3) ]['Global']
+x2 = df[ (df.Year >= -2.58e6) & (df.Year < -478.0e3) ]['Year']
 s2 = stats.binned_statistic( x2, y2, 'mean', bins=np.linspace( p2start, p2end, p2n + 1 ) )
-p2x = np.linspace( p2start + p2unit/2., p2end - p2unit/2., p2n ) # [-2.55, -0.45] Myr --> 22 bars
+p2x = np.linspace( p2start + p2unit/2., p2end - p2unit/2., p2n ) # [-2.595, -0.475] Myr --> 213 bars
 p2y = s2.statistic
- 
+
 # PANEL 3: -478 Kyr (Anglian Glacial) to 11700 (Holocene) ---------------------
 
-p3unit = 1e3
-p3start = -480000
-p3end = -10000
+p3unit = 1e3 # millennial
+p3start = -479000
+p3end = -11000
 p3n = int( (p3end - p3start) / p3unit )
-
-y3 = df[ (df.Year >= -500.0e3) & (df.Year < -12000) ]['Global']
-x3 = df[ (df.Year >= -500.0e3) & (df.Year < -12000) ]['Year']
+y3 = df[ (df.Year >= -478.0e3) & (df.Year < -11700) ]['Global']
+x3 = df[ (df.Year >= -478.0e3) & (df.Year < -11700) ]['Year']
 s3 = stats.binned_statistic( x3, y3, 'mean', bins=np.linspace( p3start, p3end, p3n + 1 ) )
-p3x = np.linspace( p3start + p3unit/2, p3end - p3unit/2., p3n ) # [-475, -15] Kyr --> 47 bars
+p3x = np.linspace( p3start + p3unit/2, p3end - p3unit/2., p3n ) # [-478.5, -11.5] Kyr --> 468 bars
 p3y = s3.statistic
+ 
+# PANEL 4: 11700 (Holocene) to 0 CE -------------------------------------------
 
-# PANEL 4: 11700 (Holocene) to 500 CE (Norwich) -------------------------------
-
-p4unit = 1e2
-p4start = -15000
-#p4end = 1000
-p4end = 50
+p4unit = 1e2 # centennial
+p4start = -11700
+p4end = 0
 p4n = int( (p4end - p4start) / p4unit )
-
-#y4 = df[ (df.Year >= -20000) & (df.Year < 1000) ]['Global']
-#x4 = df[ (df.Year >= -20000) & (df.Year < 1000)]['Year']
-y4 = df[ (df.Year >= -20000) & (df.Year < 0) ]['Global']
-x4 = df[ (df.Year >= -20000) & (df.Year < 0)]['Year']
+y4 = df[ (df.Year >= -11700) & (df.Year < 1) ]['Global']
+x4 = df[ (df.Year >= -11700) & (df.Year < 1)]['Year']
 s4 = stats.binned_statistic( x4, y4, 'mean', bins=np.linspace( p4start, p4end, p4n + 1) )
-p4x = np.linspace( p4start + p4unit/2., p4end - p4unit/2., p4n ) # [-11500, +500] Kyr --> 13 bars
+p4x = np.linspace( p4start + p4unit/2., p4end - p4unit/2., p4n ) # [-11650, -50] Kyr --> 117 bars
 p4y = s4.statistic
 
-# PANEL 5: 500 (Norwich) to 1850 CE (HadCRUT5) --------------------------------
+# PANEL 5: 0 to 1850 CE (PAGES2k) ---------------------------------------------
 
-if use_hires_norwich == True:
-    p5unit = 1e1
-else:
-    p5unit = 1e2
-#p5start = 500
+p5unit = 1e1 # decadal
 p5start = 0
-p5end = 1855
+p5end = 1850
 p5n = int( (p5end - p5start) / p5unit )
-
-#y5 = df[ (df.Year >= 400) & (df.Year < 1900) ]['Global']
-#x5 = df[ (df.Year >= 400) & (df.Year < 1900) ]['Year']
-y5 = df[ (df.Year >= 0) & (df.Year < 1900) ]['Global']
-x5 = df[ (df.Year >= 0) & (df.Year < 1900) ]['Year']
+y5 = df[ (df.Year >= 1) & (df.Year < 1851) ]['Global']
+x5 = df[ (df.Year >= 1) & (df.Year < 1851) ]['Year']
 s5 = stats.binned_statistic( x5, y5, 'mean', bins=np.linspace( p5start, p5end, p5n + 1) )
-p5x = np.linspace( p5start + p5unit/2., p5end - p5unit/2., p5n ) # [+550, 1850] --> 14 bars
+p5x = np.linspace( p5start + p5unit/2., p5end - p5unit/2., p5n ) # [+5, 1845] --> 185 bars
 p5y = s5.statistic
 
-# PANEL 6: 1850 (HadCRUT5) to 2200 CE (FaIR) ----------------------------------
+# PANEL 6: 1850 to 2020 CE (HadCRUT5) -----------------------------------------
 
-p6unit = 1e0 # decadal
+p6unit = 1e0 # annual
 p6start = 1850
-p6end = 2200
+p6end = 2020
 p6n = int( (p6end - p6start) / p6unit )
-
-y6 = df[ df.Year >= 1800 ]['Global']
-x6 = df[ df.Year >= 1800 ]['Year']
+y6 = df[ (df.Year >= 1851) & (df.Year < 2021) ]['Global']
+x6 = df[ (df.Year >= 1851) & (df.Year < 2021) ]['Year']
 s6 = stats.binned_statistic( x6, y6, 'mean', bins=np.linspace( p6start, p6end, p6n + 1) )
-p6x = np.linspace( p6start + p6unit/2., p6end - p6unit/2., p6n ) # [+1855, 2195] --> 35 bars
+p6x = np.linspace( p6start + p6unit/2., p6end - p6unit/2., p6n ) # [+1850.5, 2019.5] --> 170 bars
 p6y = s6.statistic
+
+# PANEL 7: 2021 to 2200 CE (FaIR) ---------------------------------------------
+
+p7unit = 1e0 # annual
+p7start = 2020
+p7end = 2200
+p7n = int( (p7end - p7start) / p7unit )
+y7 = df[ df.Year >= 2021 ]['Global']
+x7 = df[ df.Year >= 2021 ]['Year']
+s7 = stats.binned_statistic( x7, y7, 'mean', bins=np.linspace( p7start, p7end, p7n + 1) )
+p7x = np.linspace( p7start + p7unit/2., p7end - p7unit/2., p7n ) # [+2020.5, 2199.5] --> 180 bars
+p7y = s7.statistic
 
 print('n1=', p1n)
 print('n2=', p2n)
@@ -458,14 +449,12 @@ print('n3=', p3n)
 print('n4=', p4n)
 print('n5=', p5n)
 print('n6=', p6n)
+print('n7=', p7n)
 
-x = np.array( list(p1x) + list(p2x) + list(p3x) + list(p4x) + list(p5x) + list(p6x) )
-y = np.array( list(p1y) + list(p2y) + list(p3y) + list(p4y) + list(p5y) + list(p6y) )
-
-#x = df['Year']
-#y = df['Global']
+x = np.array( list(p1x) + list(p2x) + list(p3x) + list(p4x) + list(p5x) + list(p6x) + list(p7x) )
+y = np.array( list(p1y) + list(p2y) + list(p3y) + list(p4y) + list(p5y) + list(p6y) + list(p7y) )
 z = np.array(len(y)*[1.0])
-
+        
 #------------------------------------------------------------------------------
 # SMOOTH: rolling average ( nsmooth )  --> x, y, z
 #------------------------------------------------------------------------------
@@ -477,26 +466,7 @@ if use_smoothing == True:
     x = x[mask]
     y = y[mask]
     z = z[mask]    
-    smoothstr = str(nsmooth).zfill(2) + 'yr-smooth' + '-'       
-else:
-    smoothstr = ''
 
-#------------------------------------------------------------------------------
-# ( EXPERIMENTAL ) log10 ( analytic continuation at ymin ) -----------------------
-#------------------------------------------------------------------------------
-
-if use_logarithm == True: 
-    
-    y = np.log10( y - np.nanmin(y) )        
-    mask_inf = np.isinf(y)
-    y[mask_inf] = np.nanmin(y[~mask_inf])
-    yinterp = (pd.Series(y).rolling(nsmooth, center=True).mean()).values  # re-smooth to re-fill at singular value(s)
-    y = yinterp    
-    cbarstr = 'log₁₀ (Anomaly-min)'
-    logstr = '-' + 'log10'
-else:
-    logstr = ''
-    
 #------------------------------------------------------------------------------
 # TRIM: to [t_start, t_end]
 #------------------------------------------------------------------------------
@@ -509,16 +479,21 @@ if use_timemask == True:
     z = z[timemask]
 
 #------------------------------------------------------------------------------
-# RESCALE: colormap to max = cbar_max ( provide )
+# RESCALE: colormap max = cbar_max ( provide )
 #------------------------------------------------------------------------------
+
+if use_cbar_max == True: cbar_max = cbar_max
+else: cbar_max = np.nanmax(y)
 
 y_norm_raw = ( y-np.nanmin(y) ) / ( np.nanmax(y) - np.nanmin(y) )
 
 def rescale_colormap(cbar_max):
     
     colorscalefactor = cbar_max / df_hadcrut5.ts_hadcrut5.max()
-    y_min = df_hadcrut5.ts_hadcrut5.min() * colorscalefactor
-    y_max = df_hadcrut5.ts_hadcrut5.max() * colorscalefactor
+#   y_min = df_hadcrut5.ts_hadcrut5.min() * colorscalefactor
+#   y_max = df_hadcrut5.ts_hadcrut5.max() * colorscalefactor
+    y_min = -cbar_max
+    y_max = cbar_max
     y_norm = (y - y_min) / (y_max - y_min) 
     maxval = y_max
     minval = y_min
@@ -534,17 +509,15 @@ colors, norm, sm = rescale_colormap(cbar_max)
 #==============================================================================
 # PLOTS
 #==============================================================================
-                            
+
 # PLOT (1): climate timeseries ------------------------------------------------
 
 if plot_climate_timeseries == True:
 
-    figstr = 'climate-timeseries' + '-' + projectionstr + '-' + str(nsmooth).zfill(2) + 'yr-smooth' + logstr + '-' + baselinestr + '-' + 'pleistocene' + '.png'
+    figstr = 'climate-timeseries' + paramstr + '.png'
     
     fig, ax = plt.subplots( figsize=(15,5) ); ax.axis('off')
     if use_log10_scale == True:                        
-        # X = np.diff( np.log10( np.arange(len(x)) ))
-        # Y = [ X[i+1]/X[i] for i in range(len(x)-2) ]
         plt.plot( np.array( [0.3,1] + list( np.arange( 2, len(x) ) ) ), y, ls='-', lw=0.5, color='grey', zorder=0 )
         plt.scatter( np.array( [0.3,1] + list( np.arange( 2, len(x) ) ) ), y, c=colors, s=10, cmap=cmap, norm=norm, zorder=1 )
         plt.plot( [0.3, len(x)], [0,0], ls='dashed', lw=0.5, color='white' )             
@@ -552,10 +525,8 @@ if plot_climate_timeseries == True:
     else:
         plt.plot( np.arange( len(x) ), y, ls='-', lw=0.5, color='grey', zorder=0 )
         plt.scatter( np.arange( len(x) ), y, c=colors, s=10, cmap=cmap, norm=norm, zorder=1 )
-        plt.plot( [0, len(x)], [0,0], ls='dashed', lw=0.5, color='white' )               
-    if use_overlay_axis == True: 
-        ax.axis('on')
-        ax=plt.gca(); ax.get_xaxis().set_visible(False)                
+#       plt.plot( [0, len(x)], [0,0], ls='dashed', lw=0.5, color='white' )
+    ax.axis('off')
     if use_overlay_colorbar == True:    
         cbar = plt.colorbar( sm, shrink=0.5, extend='both' )
         cbar.set_label( cbarstr, rotation=270, labelpad=25, fontsize=fontsize )
@@ -569,7 +540,7 @@ if plot_climate_timeseries == True:
 
 if plot_climate_bars == True:
 
-    figstr = 'climate-bars' + '-' + projectionstr + '-' + str(nsmooth).zfill(2) + 'yr-smooth' + logstr + '-' + baselinestr + '-' + 'pleistocene' + '.png'
+    figstr = 'climate-bars' + paramstr + '.png'
     
     fig, ax = plt.subplots( figsize=(15,5) ); ax.axis('off')
     if use_log10_scale == True:                
@@ -577,9 +548,7 @@ if plot_climate_bars == True:
         ax.set_xscale("log")
     else:
         plt.bar( np.arange( len(x) ), y, color=colors, width=barwidthfraction )       
-    if use_overlay_axis == True: 
-        ax.axis('on')
-        ax=plt.gca(); ax.get_xaxis().set_visible(False)                    
+    ax.axis('off')
     if use_overlay_colorbar == True:    
         cbar = plt.colorbar( sm, shrink=0.5, extend='both' )
         cbar.set_label( cbarstr, rotation=270, labelpad=25, fontsize=fontsize ) 
@@ -593,7 +562,7 @@ if plot_climate_bars == True:
        
 if plot_climate_stripes == True:
 
-    figstr = 'climate-stripes' + '-' + projectionstr + '-' + str(nsmooth).zfill(2) + 'yr-smooth' + logstr + '-' + baselinestr + '-' + 'pleistocene' + '.png'
+    figstr = 'climate-stripes' + paramstr + '.png'
         
     fig, ax = plt.subplots( figsize=(15,5) ); ax.axis('off')
     if use_log10_scale == True:                
@@ -602,9 +571,7 @@ if plot_climate_stripes == True:
     else:
         plt.bar( np.arange( len(x) ), z, color=colors, width=barwidthfraction )   
     plt.ylim(0,1)        
-    if use_overlay_axis == True: 
-        ax.axis('on')
-        ax=plt.gca(); ax.get_xaxis().set_visible(False)
+    ax.axis('off')        
     if use_overlay_timeseries == True: 
         if use_log10_scale == True:                
             plt.plot( np.array( [0.3/2,1] + list(np.arange(2, len(x))) ) + 2, y_norm_raw, color='black', ls='-', lw=1 )
@@ -619,11 +586,43 @@ if plot_climate_stripes == True:
     plt.savefig( figstr, dpi=300 )
     plt.close(fig)
 
+# PLOT (4): climate line ------------------------------------------------------
+       
+if plot_climate_line == True:
+
+    figstr = 'climate-line' + paramstr + '.png'
+        
+    fig, ax = plt.subplots( figsize=(15,5) ); ax.axis('off')
+    plt.ylim(0,1)        
+    ax.axis('off')        
+    plt.plot( np.arange( len(x) ), y_norm_raw, color='white', ls='-', lw=1 )            
+    fig.suptitle( titlestr, fontsize=fontsize )          
+    plt.tick_params(labelsize=fontsize)    
+    plt.tight_layout()
+    plt.savefig( figstr, dpi=300 )
+    plt.close(fig)
+
+# CHECK: raw v binned timeseries ----------------------------------------------
+                            
+    figstr = 'raw_vs_binned' + paramstr + '.png'
+    titlestr = 'Raw versus binned time series'
+    
+    fig, ax = plt.subplots( figsize=(15,5) ); ax.axis('off')
+    plt.plot( df.Year, df.Global, label='Raw' )
+    plt.plot( x, y, label='Binned' )    
+    ax.axis('on')
+    fig.suptitle( titlestr, fontsize=fontsize )    
+    plt.legend(loc='lower left', ncol=2, markerscale=3, facecolor='black', framealpha=0.5, fontsize=fontsize)       
+    plt.tick_params(labelsize=fontsize)    
+    plt.tight_layout()
+    plt.savefig( figstr, dpi=300 )
+    plt.close(fig)
+
 # CHECK: colour mapping ( norm ) ----------------------------------------------
 
 if plot_color_mapping == True:
         
-    figstr = 'color-mapping-variables' + '-' + projectionstr + '-' + str(nsmooth).zfill(2) + 'yr-smooth' + logstr + '-' + baselinestr + '-' + 'pleistocene' + '.png'
+    figstr = 'color-mapping-variables' + paramstr + '.png'
     titlestr = 'Colour mapping ( using IPCC AR6 divergent map )'
     
     fig, ax = plt.subplots( figsize=(15,5) )
@@ -643,7 +642,7 @@ if plot_color_mapping == True:
 
 if plot_forecast_variability == True:
         
-    figstr = 'internal-variability.png'
+    figstr = 'internal-variability' + paramstr + '.png'
     titlestr = 'Internal variability model ( low: 1350-1549, high: 1550-1749 )'
     
     fig, ax = plt.subplots( figsize=(15,5) )
@@ -659,8 +658,6 @@ if plot_forecast_variability == True:
 
 #------------------------------------------------------------------------------
 print('** END')
-
-#colors = ['crimson', 'dodgerblue', 'teal', 'limegreen', 'gold']
 
 # ADD: source data annotations
 
