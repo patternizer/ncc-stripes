@@ -53,7 +53,7 @@ warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
 
 fontsize = 10
 nsmooth = 2 # years
-cbar_max = 6.0
+cbar_max = 2.0
 barwidthfraction = 1.0
 t_start = 1850
 t_end = 2020
@@ -61,20 +61,18 @@ t_end = 2020
 use_timemask = True
 use_logarithm = False
 use_log10_scale = False
-use_hires_norwich = False
 use_data_cmax = False
 
 use_dark_theme = True
 use_smoothing = True
 use_overlay_axis = True
-use_overlay_timeseries = True
+use_overlay_timeseries = False
 use_overlay_colorbar = True
 
-plot_forecast_variability = True
-plot_color_mapping = True
 plot_climate_timeseries = False
-plot_climate_bars = True
+plot_climate_bars = False
 plot_climate_stripes = True
+plot_climate_line = False
  
 #projectionstr = 'RCP3pd'
 #projectionstr = 'RCP45'
@@ -82,9 +80,9 @@ plot_climate_stripes = True
 #projectionstr = 'RCP85'
 
 #projectionstr = 'SSP119'
-projectionstr = 'SSP126'
+#projectionstr = 'SSP126'
 #projectionstr = 'SSP245'
-#projectionstr = 'SSP370'
+projectionstr = 'SSP370'
 #projectionstr = 'SSP585'
  
 baselinestr = 'baseline_1851_1900'
@@ -544,9 +542,9 @@ if plot_climate_stripes == True:
 
 # PLOT (4): climate line ---------------------------------------------------
        
-if plot_climate_stripes == True:
+if plot_climate_line == True:
 
-    figstr = 'climate-line' + '-' + baselinestr + '-' + 'Panel 3b' + '.png'
+    figstr = 'climate-line' + '-' + baselinestr + '-' + 'Panel-3b' + '.png'
         
     fig, ax = plt.subplots( figsize=(15,5) ); ax.axis('off')
     plt.ylim(0,1)        

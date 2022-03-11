@@ -61,20 +61,19 @@ t_end = 2200
 use_timemask = True
 use_logarithm = False
 use_log10_scale = False
-use_hires_norwich = False
+use_hires_norwich = True
 use_data_cmax = False
 
 use_dark_theme = True
 use_smoothing = True
 use_overlay_axis = True
-use_overlay_timeseries = True
+use_overlay_timeseries = False
 use_overlay_colorbar = True
 
-plot_forecast_variability = True
-plot_color_mapping = True
 plot_climate_timeseries = False
-plot_climate_bars = True
+plot_climate_bars = False
 plot_climate_stripes = True
+plot_climate_line = True
  
 #projectionstr = 'RCP3pd'
 #projectionstr = 'RCP45'
@@ -544,9 +543,9 @@ if plot_climate_stripes == True:
 
 # PLOT (4): climate line ---------------------------------------------------
        
-if plot_climate_stripes == True:
+if plot_climate_line == True:
 
-    figstr = 'climate-line' + '-' + baselinestr + '-' + 'Panel 4' + '-' + projectionstr + '.png'
+    figstr = 'climate-line' + '-' + baselinestr + '-' + 'Panel-4' + '-' + projectionstr + '.png'
         
     fig, ax = plt.subplots( figsize=(15,5) ); ax.axis('off')
     plt.ylim(0,1)        

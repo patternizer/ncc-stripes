@@ -61,7 +61,6 @@ t_end = 2200
 use_timemask = True
 use_logarithm = False
 use_log10_scale = False
-use_hires_norwich = False
 use_data_cmax = False
 
 use_dark_theme = True
@@ -70,11 +69,10 @@ use_overlay_axis = True
 use_overlay_timeseries = True
 use_overlay_colorbar = True
 
-plot_forecast_variability = True
-plot_color_mapping = True
-plot_climate_timeseries = False
-plot_climate_bars = True
+plot_climate_timeseries = True
+plot_climate_bars = False
 plot_climate_stripes = True
+plot_climate_line = True
  
 #projectionstr = 'RCP3pd'
 #projectionstr = 'RCP45'
@@ -380,7 +378,7 @@ p1y = s1.statistic
 
 # PANEL 2a.1: -2.58 Myr (Pleistocene) to -478 Kyr (Anglian Glacial) --------------
 
-p2unit = 1e4
+p2unit = 1e5
 p2start = -3000000
 p2end = -480000
 p2n = int( (p2end - p2start) / p2unit )
@@ -393,7 +391,7 @@ p2y = s2.statistic
  
 # PANEL 2a.2: -478 Kyr (Anglian Glacial) to 11700 (Holocene) ---------------------
 
-p3unit = 1e3
+p3unit = 1e4
 p3start = -480000
 p3end = -11000
 p3n = int( (p3end - p3start) / p3unit )
@@ -406,7 +404,7 @@ p3y = s3.statistic
 
 # PANEL 2a.3: 11700 (Holocene) to 0 CE (Norwich) -------------------------------
 
-p4unit = 1e2
+p4unit = 1e3
 p4start = -11700
 p4end = 0
 p4n = int( (p4end - p4start) / p4unit )
@@ -432,7 +430,7 @@ p5y = s5.statistic
 
 # PANEL 2b: 500 - 1400 CE ---------------------------------------------------------
 
-p6unit = 1e0
+p6unit = 1e1
 p6start = 500
 p6end = 1400
 p6n = int( (p6end - p6start) / p6unit )
@@ -445,7 +443,7 @@ p6y = s6.statistic
 
 # PANEL 3a: 1400 - 1850 CE -----------------------------------------------------
 
-p7unit = 1e0
+p7unit = 1e1
 p7start = 1400
 p7end = 1850
 p7n = int( (p7end - p7start) / p7unit )
@@ -591,12 +589,14 @@ if plot_climate_timeseries == True:
 #        plt.plot( np.arange( len(x) ), y, ls='-', lw=0.5, color='grey', zorder=0 )
 #        plt.scatter( np.arange( len(x) ), y, c=colors, s=10, cmap=cmap, norm=norm, zorder=1 )
 #        plt.plot( [0, len(x)], [0,0], ls='dashed', lw=0.5, color='white' )               
-        plt.plot( x, y, ls='-', lw=0.5, color='grey', zorder=0 )
-        plt.scatter( x, y, c=colors, s=10, cmap=cmap, norm=norm, zorder=1 )
-        plt.plot( [x[0], x[-1]], [0,0], ls='dashed', lw=0.5, color='white' )               
+        plt.plot( np.arange( len(x) ), y, ls='-', lw=0.5, color='grey', zorder=0 )
+        plt.scatter( np.arange( len(x) ), y, c=colors, s=10, cmap=cmap, norm=norm, zorder=1 )
+#        plt.plot( [x[0], x[-1]], [0,0], ls='dashed', lw=0.5, color='white' )               
     if use_overlay_axis == True: 
         ax.axis('on')
-        ax=plt.gca(); ax.get_xaxis().set_visible(True)                
+        ax=plt.gca(); ax.get_xaxis().set_visible(False)                
+        ax.axis('on')
+        ax=plt.gca(); ax.get_yaxis().set_visible(True)                
     if use_overlay_colorbar == True:    
         cbar = plt.colorbar( sm, shrink=0.5, extend='both' )
         cbar.set_label( cbarstr, rotation=270, labelpad=25, fontsize=fontsize )
@@ -658,7 +658,7 @@ if plot_climate_stripes == True:
 
 # PLOT (4): climate line ---------------------------------------------------
        
-if plot_climate_stripes == True:
+if plot_climate_line == True:
 
     figstr = 'climate-line' + '-' + baselinestr + '-' + 'Panels_all' + '.png'
         
