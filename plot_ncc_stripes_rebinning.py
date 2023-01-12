@@ -74,7 +74,7 @@ use_overlay_timeseries = True
 use_overlay_baseline = False
 use_overlay_colorbar = True
 
-plot_forecast_variability = False
+plot_forecast_variability = True
 plot_color_mapping = False
 plot_climate_timeseries = False
 plot_climate_bars = True

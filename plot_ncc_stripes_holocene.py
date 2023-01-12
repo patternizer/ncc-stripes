@@ -78,9 +78,9 @@ plot_climate_line = True
 #projectionstr = 'RCP6'
 #projectionstr = 'RCP85'
 #projectionstr = 'SSP119'
-projectionstr = 'SSP126'
+#projectionstr = 'SSP126'
 #projectionstr = 'SSP245'
-#projectionstr = 'SSP370'
+projectionstr = 'SSP370'
 #projectionstr = 'SSP585'
  
 baselinestr = 'baseline_1851_1900'

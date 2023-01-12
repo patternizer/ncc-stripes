@@ -77,9 +77,9 @@ projectionstr3 = 'SSP245'
 projectionstr4 = 'SSP370'
 projectionstr5 = 'SSP585'
 
-#baselinestr = 'baseline_1851_1900'
+baselinestr = 'baseline_1851_1900'
 #baselinestr = 'baseline_1961_1990'
-baselinestr = 'baseline_1971_2000'
+#baselinestr = 'baseline_1971_2000'
 
 pathstr = 'DATA/'
 pages2kstr = 'PAGES2k.txt'
@@ -566,7 +566,7 @@ if use_overlay_timeseries == True:
     ax3.text(2030, 0.9, 'SSP2-4.5', color='black', weight='bold', fontsize=10)
     ax4.text(2030, 0.9, 'SSP1-2.6', color='black', weight='bold', fontsize=10)
     ax5.text(2030, 0.9, 'SSP1-1.9', color='black', weight='bold', fontsize=10)    
-plt.tight_layout()
+#plt.tight_layout()
 plt.savefig( figstr, dpi=300 )
 plt.close(fig)
 

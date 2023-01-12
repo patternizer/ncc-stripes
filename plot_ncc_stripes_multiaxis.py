@@ -625,7 +625,7 @@ if plot_climate_bars == True:
         
     fig.suptitle( titlestr, fontsize=fontsize )          
     plt.tick_params(labelsize=fontsize)    
-    plt.tight_layout()
+#   plt.tight_layout()
     plt.savefig( figstr, dpi=300 )
     plt.close(fig)
 
