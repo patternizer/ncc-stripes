@@ -68,11 +68,11 @@ plot_climate_bars = True
 #projectionstr = 'SSP119'
 #projectionstr = 'SSP126'
 #projectionstr = 'SSP245'
-#projectionstr = 'SSP370'
-projectionstr = 'SSP585'
+projectionstr = 'SSP370'
+#projectionstr = 'SSP585'
  
-baselinestr = 'baseline_1851_1900'
-#baselinestr = 'baseline_1961_1990'
+#baselinestr = 'baseline_1851_1900'
+baselinestr = 'baseline_1961_1990'
 #baselinestr = 'baseline_1971_2000'
 
 titlestr = 'Global mean anomaly, 65 Myr ( < 2015) - 2200 CE: ' + projectionstr
@@ -426,7 +426,7 @@ p3y = s3.statistic
 
 # PANEL 4: 11700 (Holocene) to 500 CE (Norwich) -------------------------------
 
-p4unit = 1e3
+p4unit = 1e2
 p4start = -12e3
 p4end = 0
 p4n = int( (p4end - p4start) / p4unit )
@@ -536,7 +536,7 @@ if plot_climate_bars == True:
     ax0.bar( x[0:p1n]/1e6, y[0:p1n], color=colors[0:p1n], width=barwidthfraction )
     ax1.bar( x[p1n:p1n+p2n]/1e3, y[p1n:p1n+p2n], color=colors[p1n:p1n+p2n], width=barwidthfraction )
     ax2.bar( x[p1n+p2n:p1n+p2n+p3n]/1e3, y[p1n+p2n:p1n+p2n+p3n], color=colors[p1n+p2n:p1n+p2n+p3n], width=barwidthfraction )
-    ax3.bar( x[p1n+p2n+p3n:p1n+p2n+p3n+p4n]/1e3, y[p1n+p2n+p3n:p1n+p2n+p3n+p4n], color=colors[p1n+p2n+p3n:p1n+p2n+p3n+p4n], width=barwidthfraction )
+    ax3.bar( x[p1n+p2n+p3n:p1n+p2n+p3n+p4n]/1e3, y[p1n+p2n+p3n:p1n+p2n+p3n+p4n], color=colors[p1n+p2n+p3n:p1n+p2n+p3n+p4n], width=0.1 )
     ax4.bar( x[p1n+p2n+p3n+p4n:p1n+p2n+p3n+p4n+p5n], y[p1n+p2n+p3n+p4n:p1n+p2n+p3n+p4n+p5n], color=colors[p1n+p2n+p3n+p4n:p1n+p2n+p3n+p4n+p5n], width=barwidthfraction )
     ax5.bar( x[p1n+p2n+p3n+p4n+p5n:p1n+p2n+p3n+p4n+p5n+p6n], y[p1n+p2n+p3n+p4n+p5n:p1n+p2n+p3n+p4n+p5n+p6n], color=colors[p1n+p2n+p3n+p4n+p5n:p1n+p2n+p3n+p4n+p5n+p6n], width=barwidthfraction )
     ax6.bar( x[p1n+p2n+p3n+p4n+p5n+p6n:], y[p1n+p2n+p3n+p4n+p5n+p6n:], color=colors[p1n+p2n+p3n+p4n+p5n+p6n:], width=barwidthfraction )
